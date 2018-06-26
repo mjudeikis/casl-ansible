@@ -917,5 +917,5 @@ Resources:
         Type: CNAME
         TTL: 300
         ResourceRecords:
-        - !GetAtt Controller{ '%02d' % idx }}.PublicDnsName
+        - !GetAtt Controller{{ '%02d' % idx }}.PublicDnsName
       {% endfor -%}
