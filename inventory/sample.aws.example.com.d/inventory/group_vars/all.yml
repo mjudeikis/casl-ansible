@@ -9,7 +9,7 @@
 hosting_infrastructure: aws
 
 # Cluster Environment ID to uniquely identify the environment
-env_id: "devops-enablement5"
+env_id: "devops-enablement7"
 
 # Define custom Master(s) API and Console Port
 # Comment out these entries to use a different port for both the Web Console and OpenShift API - Default port is 8443
@@ -24,57 +24,57 @@ openshift_master_cluster_public_hostname: "console.{{ env_id }}.{{ dns_domain }}
 
 # Define infrastructure skeleton
 cloud_infrastructure:
-   region: us-west-2
+   region: eu-central-1
    #london
    #image_name: ami-10aa4677
    #paris
    #image_name: ami-5326902e
    #frankfurt
    #image_name: ami-c86c3f23
-   #us-west-2
-   image_name: ami-22a8cf5a
+   #eu-central-1
+   image_name: ami-526d3eb9
    masters:
     count: 3
     zones:
-    - us-west-2a
-    - us-west-2b
-    - us-west-2c
+    - eu-central-1a
+    - eu-central-1b
+    - eu-central-1c
     name_prefix: master
     root_volume_size: 30
     docker_volume_size: 100
    etcnodes:
     count: 3
     zones:
-    - us-west-2a
-    - us-west-2b
-    - us-west-2c
+    - eu-central-1a
+    - eu-central-1b
+    - eu-central-1c
     name_prefix: etc
     root_volume_size: 30
     docker_volume_size: 100
    appnodes:
     count: 3
     zones:
-    - us-west-2a
-    - us-west-2b
-    - us-west-2c
+    - eu-central-1a
+    - eu-central-1b
+    - eu-central-1c
     name_prefix: app
     root_volume_size: 30
     docker_volume_size: 100
    infranodes:
     count: 3
     zones:
-    - us-west-2a
-    - us-west-2b
-    - us-west-2c
+    - eu-central-1a
+    - eu-central-1b
+    - eu-central-1c
     name_prefix: infra
     root_volume_size: 30
     docker_volume_size: 100
    cnsnodes:
      count: 6
      zones:
-     - us-west-2a
-     - us-west-2b
-     - us-west-2c
+     - eu-central-1a
+     - eu-central-1b
+     - eu-central-1c
      name_prefix: cns
      root_volume_size: 30
      docker_volume_size: 100
@@ -82,14 +82,14 @@ cloud_infrastructure:
    bastionnodes:
      count: 1
      zones:
-     - us-west-2a
+     - eu-central-1a
      name_prefix: bastion
      root_volume_size: 30
      docker_volume_size: 100
    controllernode:
      count: 1
      zones:
-     - us-west-2a
+     - eu-central-1a
      name_prefix: controller
      root_volume_size: 30
      docker_volume_size: 100
