@@ -13,6 +13,8 @@ masters
 nodes
 etcd
 glusterfs
+controller
+bastion
 
 # Set variables common for all OSEv3 hosts
 #[OSEv3:vars]
@@ -47,3 +49,9 @@ tag_group_cns_nodes_aws
 [tag_group_infra_nodes_aws]
 [tag_group_app_nodes_aws]
 [tag_group_cns_nodes_aws]
+
+[controller:children]
+tag_group_controller_nodes_aws
+
+[bastion:children]
+tag_group_bastion_nodes_aws

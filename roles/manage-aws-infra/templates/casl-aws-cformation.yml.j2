@@ -39,6 +39,14 @@ Parameters:
     Default: "i3.xlarge"
     Description: "The instance type to be used"
     Type: "String"
+  BastionInstanceType:
+    Default: "t2.medium"
+    Description: "The instance type to be used"
+    Type: "String"
+  ControllerInstanceType:
+    Default: "t2.medium"
+    Description: "The instance type to be used"
+    Type: "String"
   CNSInstanceType:
     Default: "i3.xlarge"
     Description: "The instance type to be used"
@@ -65,6 +73,12 @@ Resources:
   {% elif (aws_infranodes_zones.__len__() >= aws_masters_zones.__len__()) and (aws_infranodes_zones.__len__() >= aws_etcd_zones.__len__()) and (aws_infranodes_zones.__len__() >= aws_appnodes_zones.__len__()) and (aws_infranodes_zones.__len__() >= aws_cnsnodes_zones.__len__()) -%}
     {% set numzones = aws_infranodes_zones.__len__() -%}
     {% set zones = aws_infranodes_zones -%}
+  {% elif (aws_bastionnodes_zones.__len__() >= aws_masters_zones.__len__()) and (aws_bastionnodes_zones.__len__() >= aws_etcd_zones.__len__()) and (aws_bastionnodes_zones.__len__() >= aws_appnodes_zones.__len__()) and (aws_bastionnodes_zones.__len__() >= aws_cnsnodes_zones.__len__()) -%}
+    {% set numzones = aws_bastionnodes_zones.__len__() -%}
+    {% set zones = aws_bastionnodes_zones -%}
+  {% elif (aws_controllernodes_zones.__len__() >= aws_masters_zones.__len__()) and (aws_controllernodes_zones.__len__() >= aws_etcd_zones.__len__()) and (aws_controllernodes_zones.__len__() >= aws_appnodes_zones.__len__()) and (aws_controllernodes_zones.__len__() >= aws_cnsnodes_zones.__len__()) -%}
+    {% set numzones = aws_controllernodes_zones.__len__() -%}
+    {% set zones = aws_controllernodes_zones -%}
   {% else -%}
     {% set numzones = aws_cnsnodes_zones.__len__() -%}
     {% set zones = aws_cnsnodes_zones -%}
@@ -552,6 +566,86 @@ Resources:
             DeleteOnTermination: "true"
             VolumeSize: "{{ cns_node_glusterfs_volume_size }}"
 {% endfor %}
+{% for idx in range(0, aws_num_bastion_nodes | int) %}
+{% set zone = aws_bastionnodes_zones[ (idx % aws_bastionnodes_zones.__len__())] %}
+{% set zoneidx = (idx % aws_bastionnodes_zones.__len__()) + 1 %}
+  Bastion{{ '%02d' % idx }}:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: !Ref Image
+      KeyName: !Ref KeyPairName
+      InstanceType: !Ref InfraInstanceType
+      SubnetId: !Ref SubnetAZ{{ zoneidx }}
+      SecurityGroupIds:
+        - !GetAtt nodesg.GroupId
+        - !GetAtt infrasg.GroupId
+        - !GetAtt sshsg.GroupId
+      Tags:
+        - Key: 'Name'
+          Value: '{{ aws_bastionnodes_name_prefix }}-{{ idx }}.{{ env_id }}.{{ dns_domain }}'
+        - Key: 'ocp_role'
+          Value: 'bastionnode'
+        - Key: 'env_id'
+          Value: '{{ env_id }}'
+        - Key: 'group'
+          Value: '{{ group_bastion_nodes_tag }}'
+        - Key: 'node_labels'
+          Value: '{{ group_bastion_nodes_tag }}'
+        - Key: 'kubernetes.io/cluster/cluster-{{ env_id }}'
+          Value: '{{ env_id }}'
+      AvailabilityZone: {{ zone }}
+      BlockDeviceMappings:
+        - DeviceName: "{{ master_root_volume }}"
+          Ebs:
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
+            VolumeSize: "{{ bastion_node_root_volume_size }}"
+        - DeviceName: "{{ docker_storage_block_device }}"
+          Ebs:
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
+            VolumeSize: "{{ bastion_node_docker_volume_size }}"
+{% endfor %}
+{% for idx in range(0, aws_num_controller_nodes | int) %}
+{% set zone = aws_controllernodes_zones[ (idx % aws_controllernodes_zones.__len__())] %}
+{% set zoneidx = (idx % aws_controllernodes_zones.__len__()) + 1 %}
+  Controller{{ '%02d' % idx }}:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: !Ref Image
+      KeyName: !Ref KeyPairName
+      InstanceType: !Ref ControllerInstanceType
+      SubnetId: !Ref SubnetAZ{{ zoneidx }}
+      SecurityGroupIds:
+        - !GetAtt nodesg.GroupId
+        - !GetAtt infrasg.GroupId
+        - !GetAtt sshsg.GroupId
+      Tags:
+        - Key: 'Name'
+          Value: '{{ aws_controllernodes_name_prefix }}-{{ idx }}.{{ env_id }}.{{ dns_domain }}'
+        - Key: 'ocp_role'
+          Value: 'controllernode'
+        - Key: 'env_id'
+          Value: '{{ env_id }}'
+        - Key: 'group'
+          Value: '{{ group_controller_nodes_tag }}'
+        - Key: 'node_labels'
+          Value: '{{ group_controller_nodes_tag }}'
+        - Key: 'kubernetes.io/cluster/cluster-{{ env_id }}'
+          Value: '{{ env_id }}'
+      AvailabilityZone: {{ zone }}
+      BlockDeviceMappings:
+        - DeviceName: "{{ master_root_volume }}"
+          Ebs:
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
+            VolumeSize: "{{ controller_node_root_volume_size }}"
+        - DeviceName: "{{ docker_storage_block_device }}"
+          Ebs:
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
+            VolumeSize: "{{ controller_node_docker_volume_size }}"
+{% endfor %}
   MasterExtElb:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
@@ -676,6 +770,12 @@ Resources:
     {% for idx in range(0, aws_num_etcd | int) -%}
     - ETCD{{ '%02d' % idx }}
     {% endfor -%}
+    {% for idx in range(0, aws_num_bastion_nodes | int) -%}
+    - Bastion{{ '%02d' % idx }}
+    {% endfor -%}
+    {% for idx in range(0, aws_num_controller_nodes | int) -%}
+    - Controller{{ '%02d' % idx }}
+    {% endfor -%}
     Properties:
       HostedZoneName: "{{ env_id }}.{{ dns_domain }}."
       RecordSets:
@@ -714,6 +814,20 @@ Resources:
         ResourceRecords:
          - !GetAtt ETCD{{ '%02d' % idx }}.PrivateDnsName
       {% endfor -%}
+      {% for idx in range(0, aws_num_bastion_nodes | int) -%}
+      - Name: "bastion-{{ idx }}.{{ env_id }}.{{ dns_domain }}."
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+         - !GetAtt Bastion{{ '%02d' % idx }}.PrivateDnsName
+      {% endfor -%}
+      {% for idx in range(0, aws_num_controller_nodes | int) -%}
+      - Name: "controller-{{ idx }}.{{ env_id }}.{{ dns_domain }}."
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+         - !GetAtt Controller{{ '%02d' % idx }}.PrivateDnsName
+      {% endfor -%}
       - Name: "{{ openshift_master_cluster_public_hostname }}."
         Type: A
         AliasTarget:
@@ -746,6 +860,12 @@ Resources:
     {% endfor -%}
     {% for idx in range(0, aws_num_etcd | int) -%}
     - ETCD{{ '%02d' % idx }}
+    {% endfor -%}
+    {% for idx in range(0, aws_num_bastion_nodes | int) -%}
+    - Bastion{{ '%02d' % idx }}
+    {% endfor -%}
+    {% for idx in range(0, aws_num_controller_nodes | int) -%}
+    - Controller{{ '%02d' % idx }}
     {% endfor -%}
     Properties:
       HostedZoneName: "{{ dns_domain }}."
@@ -784,4 +904,18 @@ Resources:
         TTL: 300
         ResourceRecords:
         - !GetAtt ETCD{{ '%02d' % idx }}.PublicDnsName
+      {% endfor -%}
+      {% for idx in range(0, aws_num_bastion_nodes | int) -%}
+      - Name: "bastion-{{ idx }}.{{ env_id }}.{{ dns_domain }}."
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+        - !GetAtt Bastion{{ '%02d' % idx }}.PublicDnsName
+      {% endfor -%}
+      {% for idx in range(0, aws_num_controller_nodes | int) -%}
+      - Name: "controller-{{ idx }}.{{ env_id }}.{{ dns_domain }}."
+        Type: CNAME
+        TTL: 300
+        ResourceRecords:
+        - !GetAtt Controller{{ '%02d' % idx }}.PublicDnsName
       {% endfor -%}
