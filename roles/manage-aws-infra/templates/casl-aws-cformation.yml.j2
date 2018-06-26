@@ -588,7 +588,7 @@ Resources:
           Value: '{{ env_id }}'
       AvailabilityZone: {{ zone }}
       BlockDeviceMappings:
-        - DeviceName: "{{ group_bastion_nodes_tag }}"
+        - DeviceName: "{{ master_root_volume }}"
           Ebs:
             VolumeType: "gp2"
             DeleteOnTermination: "true"

@@ -1,0 +1,9 @@
+---
+
+###############################
+# SSH key distribution
+
+- hosts: all
+  tasks:
+    - import_role:
+        name: ../../galaxy/ansible-ssh-setup

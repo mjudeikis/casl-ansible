@@ -17,3 +17,5 @@
 - src: https://github.com/openshift/openshift-ansible
   version: release-3.9
 
+# From 'ansible-ssh-setup'
+- src: https://github.com/mjudeikis/ansible-ssh-setup.git
